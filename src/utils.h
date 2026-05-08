@@ -2,6 +2,9 @@
 // Created by awalol on 2026/3/4.
 //
 
+#ifndef DS5_BRIDGE_UTILS_H
+#define DS5_BRIDGE_UTILS_H
+
 #include <array>
 #include <cstdint>
 #include <iomanip>
@@ -255,3 +258,5 @@ inline void print_hex(const uint8_t* data,size_t size) {
     }
     std::cout << std::endl;
 }
+
+#endif //DS5_BRIDGE_UTILS_H

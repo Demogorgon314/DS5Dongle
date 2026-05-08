@@ -7,6 +7,12 @@
 
 #include <cstdint>
 
+enum ControllerMode : uint8_t {
+    ControllerMode_DS5 = 0,
+    ControllerMode_DSE = 1,
+    ControllerMode_SwitchPro = 2,
+};
+
 struct __attribute__((packed)) Config_body {
     float haptics_gain; // [1.0,2.0]
     float speaker_volume; // [-100,0]
@@ -15,7 +21,7 @@ struct __attribute__((packed)) Config_body {
     uint8_t disable_pico_led; // bool
     uint8_t polling_rate_mode; // 0: 250Hz, 1: 500Hz, 2: real-time
     uint8_t haptics_buffer_length; // [16,128]
-    uint8_t controller_mode; // 0: DS5, 1: DSE, 2: Auto
+    uint8_t controller_mode; // ControllerMode
 };
 
 struct __attribute__((packed)) Config {
@@ -30,6 +36,9 @@ void config_default();
 void config_load();
 bool config_save();
 const Config_body& get_config();
+bool is_ds5_mode();
+bool is_dse_mode();
+bool is_switch_pro_mode();
 void set_config(const uint8_t *new_config, const uint16_t len);
 void config_valid();
 void set_config(const Config_body &new_config);

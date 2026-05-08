@@ -17,6 +17,7 @@
 #endif
 #include "config.h"
 #include "cmd.h"
+#include "switch_pro.h"
 
 // Pico SDK speciifically for waiting on conditions
 #include "pico/critical_section.h"
@@ -78,7 +79,15 @@ void interrupt_loop() {
 
 void on_bt_data(CHANNEL_TYPE channel, uint8_t *data, uint16_t len) {
     // printf("[Main] BT data callback: channel=%u len=%u\n", channel, len);
-    if (channel == INTERRUPT && data[1] == 0x31) {
+    if (channel == INTERRUPT && len >= 66 && data[1] == 0x31) {
+        if (is_switch_pro_mode()) {
+            USBGetStateData ds5{};
+            memcpy(&ds5, data + 3, sizeof(ds5));
+            switch_pro_on_ds5_input(ds5);
+            set_headset(data[56] & 1);
+            return;
+        }
+
         if ((data[56] & 1) != (interrupt_in_data[53] & 1)) {
             set_headset(data[56] & 1);
         }
@@ -89,9 +98,9 @@ void on_bt_data(CHANNEL_TYPE channel, uint8_t *data, uint16_t len) {
         }
 
         // We add the critical section here to avoid any race conditions when writing to the interrupt_in_data buffer,
-        // which is shared between the main loop and this callback. 
-        // The critical section ensures that only one thread can access the buffer at a time, 
-        // preventing data corruption and ensuring thread safety.   
+        // which is shared between the main loop and this callback.
+        // The critical section ensures that only one thread can access the buffer at a time,
+        // preventing data corruption and ensuring thread safety.
         // We also set the report_dirty flag to true to indicate that new data is available
         //  and needs to be sent in the next interrupt report.
         critical_section_enter_blocking(&report_cs);
@@ -116,6 +125,10 @@ uint16_t tud_hid_get_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t
         return pico_cmd_get(report_id,buffer,reqlen);
     }
 
+    if (is_switch_pro_mode()) {
+        return switch_pro_get_report(report_id, buffer, reqlen);
+    }
+
     std::vector<uint8_t> feature_data = get_feature_data(report_id, reqlen);
     if (!feature_data.empty()) {
         memcpy(buffer, feature_data.data() + 1, feature_data.size() - 1);
@@ -137,6 +150,11 @@ void tud_hid_set_report_cb(uint8_t itf, uint8_t report_id, hid_report_type_t rep
     if (is_pico_cmd(report_id)) {
         printf("[HID] Receive 0xf6 setting config, funcid:0x%02X\n",buffer[0]);
         pico_cmd_set(report_id,buffer,bufsize);
+        return;
+    }
+
+    if (is_switch_pro_mode()) {
+        switch_pro_handle_hid_out(report_id, buffer, bufsize);
         return;
     }
 
@@ -211,6 +229,7 @@ int main() {
   
     // Initialize the critical section for the report buffer
     critical_section_init(&report_cs);
+    switch_pro_init();
 
     config_load();
 
@@ -230,6 +249,10 @@ int main() {
         cyw43_arch_poll();
         tud_task();
         audio_loop();
-        interrupt_loop();
+        if (is_switch_pro_mode()) {
+            switch_pro_task();
+        } else {
+            interrupt_loop();
+        }
     }
 }

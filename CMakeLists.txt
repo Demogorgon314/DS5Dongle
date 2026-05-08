@@ -53,6 +53,9 @@ add_executable(ds5-bridge
         src/bt.cpp
         src/config.cpp
         src/cmd.cpp
+        src/switch_hd_haptics.cpp
+        src/switch_hd_rumble.cpp
+        src/switch_pro.cpp
 )
 
 # Cockos WDLResampler
@@ -117,4 +120,3 @@ target_link_libraries(ds5-bridge
 )
 
 pico_add_extra_outputs(ds5-bridge)
-

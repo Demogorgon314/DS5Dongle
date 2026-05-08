@@ -75,8 +75,8 @@ void config_valid() {
         body->haptics_buffer_length = 64;
         printf("[Config] haptics_buffer_length is invalid\n");
     }
-    if (body->controller_mode > 2) {
-        body->controller_mode = 2;
+    if (body->controller_mode > ControllerMode_SwitchPro) {
+        body->controller_mode = ControllerMode_DS5;
         printf("[Config] controller_mode is invalid\n");
     }
 }
@@ -111,6 +111,18 @@ bool config_save() {
 
 const Config_body& get_config() {
     return config.body;
+}
+
+bool is_ds5_mode() {
+    return config.body.controller_mode == ControllerMode_DS5;
+}
+
+bool is_dse_mode() {
+    return config.body.controller_mode == ControllerMode_DSE;
+}
+
+bool is_switch_pro_mode() {
+    return config.body.controller_mode == ControllerMode_SwitchPro;
 }
 
 void set_config(const uint8_t *new_config, const uint16_t len) {
